@@ -1,0 +1,43 @@
+[
+    {
+        "name": "MonitoringResults",
+        "columns": [
+            {
+                "name": "id",
+                "specs": "bigint unsigned not null auto_increment"
+            },
+            {
+                "name": "payload",
+                "specs": "LONGTEXT"
+            }
+        ],
+        "constraints": [
+            "pk_monitoringresults primary key (id)"
+        ]
+    },
+    {
+        "name": "MonitoredEndpoint",
+        "columns": [
+            {
+                "name": "id",
+                "specs": "bigint unsigned not null auto_increment"
+            }
+        ],
+        "constraints": [
+            "pk_monitoredendpoint primary key (id)"
+        ]
+    },
+    {
+        "name": "User", 
+        "columns": [
+            {
+                "name": "id",
+                "specs": "bigint unsigned not null auto_increment"
+            }
+        ],
+        "constraints": [
+            "pk_user primary key (id)"
+        ]
+    }
+]
+

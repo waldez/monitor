@@ -1,0 +1,23 @@
+{
+  "name": "monitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "mocha test --recursive --timeout 5000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/waldez/monitor.git"
+  },
+  "author": "waldez <tomas.waldauf@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/waldez/monitor/issues"
+  },
+  "homepage": "https://github.com/waldez/monitor#readme",
+  "dependencies": {
+    "bluebird": "^3.5.2",
+    "mysql": "^2.16.0"
+  }
+}
