@@ -5,7 +5,8 @@ async function start(config, Db) {
     const db = new Db(config.mysql);
     await db.initialize();
 
-    await db.destroy();
+    // TODO: temporary - remove when finished
+    await db.end();
 }
 
 start(

@@ -1,5 +1,66 @@
 [
     {
+        "name": "Users",
+        "columns": [
+            {
+                "name": "id",
+                "specs": "bigint unsigned not null auto_increment"
+            },
+            {
+                "name": "user_name",
+                "specs": "VARCHAR(40)"
+            },
+            {
+                "name": "email",
+                "specs": "VARCHAR(200)"
+            },
+            {
+                "name": "access_token",
+                "specs": "VARCHAR(36)"
+            }
+        ],
+        "constraints": [
+            "constraint pk_user primary key (id)"
+        ]
+    },
+    {
+        "name": "MonitoredEndpoints",
+        "columns": [
+            {
+                "name": "id",
+                "specs": "bigint unsigned not null auto_increment"
+            },
+            {
+                "name": "name",
+                "specs": "VARCHAR(40)"
+            },
+            {
+                "name": "url",
+                "specs": "VARCHAR(1024)"
+            },
+            {
+                "name": "created",
+                "specs": "DATETIME"
+            },
+            {
+                "name": "checked",
+                "specs": "DATETIME"
+            },
+            {
+                "name": "check_interval",
+                "specs": "int unsigned"
+            },
+            {
+                "name": "user_id",
+                "specs": "bigint unsigned"
+            }
+        ],
+        "constraints": [
+            "constraint pk_monitoredendpoint primary key (id)",
+            "constraint fk_user_id foreign key (user_id) references Users(id)"
+        ]
+    },
+    {
         "name": "MonitoringResults",
         "columns": [
             {
@@ -7,37 +68,25 @@
                 "specs": "bigint unsigned not null auto_increment"
             },
             {
+                "name": "status_code",
+                "specs": "SMALLINT unsigned"
+            },
+            {
                 "name": "payload",
                 "specs": "LONGTEXT"
-            }
-        ],
-        "constraints": [
-            "pk_monitoringresults primary key (id)"
-        ]
-    },
-    {
-        "name": "MonitoredEndpoint",
-        "columns": [
+            },
             {
-                "name": "id",
-                "specs": "bigint unsigned not null auto_increment"
-            }
-        ],
-        "constraints": [
-            "pk_monitoredendpoint primary key (id)"
-        ]
-    },
-    {
-        "name": "User", 
-        "columns": [
+                "name": "timestamp",
+                "specs": "TIMESTAMP"
+            },
             {
-                "name": "id",
-                "specs": "bigint unsigned not null auto_increment"
+                "name": "monitored_endpoint_id",
+                "specs": "bigint unsigned"
             }
         ],
         "constraints": [
-            "pk_user primary key (id)"
+            "constraint pk_monitoringresults primary key (id)",
+            "constraint fk_monitored_endpoint_id foreign key (monitored_endpoint_id) references MonitoredEndpoints(id)"
         ]
     }
 ]
-

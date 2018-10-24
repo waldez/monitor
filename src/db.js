@@ -9,7 +9,7 @@ function buildTableSchemaString({ name, columns, constraints }) {
 
     const columnsStr = columns.map(c => c.name + ' ' + c.specs).join(', ');
     const constraintsStr = Array.isArray(constraints) && constraints.length > 0 ?
-        ', constraint ' + constraints.join(', ') :
+        ', ' + constraints.join(', ') :
         '';
     return `${name} ( ${columnsStr}${constraintsStr} )`;
 }
@@ -40,17 +40,6 @@ class Db {
         await con.changeUserAsync({ database : this.options.database });
 
         // ensure tables exist
-
-        // TODO: smazat!!
-        const [tablesColumn/*, fields*/] = await con.queryAsync('SHOW TABLES');
-
-        console.log('!W! - tablesColumn:', tablesColumn);
-        console.log('!W! - tablesColumn:\n', JSON.stringify(tablesColumn, null, 2));
-
-        await this.removeTables();
-        // TODO: end of todo
-
-        // FIX: it could be done using some bulk mechanism, probably
         await Promise.map(
             tablesSchema,
             schema => con.queryAsync('CREATE TABLE IF NOT EXISTS ' + buildTableSchemaString(schema))
@@ -63,13 +52,14 @@ class Db {
      */
     removeTables() {
 
-        const tablesStr = tablesSchema.map(t => t.name).join(', ');
+        // feel the destructive power of reverse!
+        const tablesStr = [...tablesSchema].reverse().map(t => t.name).join(', ');
         return this.connection.queryAsync('DROP TABLE IF EXISTS ' + tablesStr);
     }
 
-    async destroy() {
+    async end() {
 
-        return this.connection.destroyAsync();
+        return this.connection.endAsync();
     }
 }
 
