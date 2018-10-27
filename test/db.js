@@ -14,7 +14,7 @@ describe('Db', function() {
 
     let db = null;
     let batmanId = null;
-    let batmanUser = {
+    const batmanUser = {
         'user_name': 'Batman',
         'email': 'batman@example.com',
         'access_token': 'dcb20f8a-5657-4f1b-9f7f-ce65739b359e'

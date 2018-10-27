@@ -19,7 +19,10 @@
   "dependencies": {
     "bluebird": "^3.5.2",
     "mysql": "^2.16.0",
-    "restify": "^7.2.1"
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2",
+    "restify": "^7.2.1",
+    "restify-errors": "^6.1.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
