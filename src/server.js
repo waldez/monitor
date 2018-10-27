@@ -26,9 +26,69 @@ function bindRoutes(server, db, monitor) {
         next();
     });
 
-    // CRUD for MonitorEndpoints
+    // CRUD for MonitoredEndpoints
+    // Create
+    server.post('/MonitoredEndpoint', async (req, res, next) => {
+
+        // {
+        //     "name": "id",
+        //     "specs": "bigint unsigned not null auto_increment"
+        // },
+        // {
+        //     "name": "name",
+        //     "specs": "VARCHAR(40)"
+        // },
+        // {
+        //     "name": "url",
+        //     "specs": "VARCHAR(1024)"
+        // },
+        // {
+        //     "name": "created",
+        //     "specs": "DATETIME"
+        // },
+        // {
+        //     "name": "checked",
+        //     "specs": "DATETIME"
+        // },
+        // {
+        //     "name": "check_interval",
+        //     "specs": "int unsigned"
+        // },
+        // {
+        //     "name": "user_id",
+        //     "specs": "bigint unsigned"
+        // }
+
+        // TODO: joi (ajv?) validation...
+
+        const { name, url, interval } = req.body;
+
+        const result = await db.insert('MonitoredEndpoints', {
+            name,
+            url,
+            created: new Date(),
+            'check_interval': interval,
+            'user_id': req.user.id
+        });
+
+        // TODO:
+        // monitor.addEndpoint(...);
+
+        res.send({ monitoredEndpointId: result });
+        next();
+    });
+
+    // Read
+    server.get('/MonitoredEndpoint/:id', async (req, res, next) => {
+
+        const id = parseInt(req.params.id);
+        const endpoint = (await db.find('MonitoredEndpoints', { id, user_id: req.user.id }))[0];
+        res.send(endpoint);
+        next();
+    });
+
     // Read - list
-    server.get('/MonitorEndpoints/list', (req, res, next) => {
+    server.get('/MonitoredEndpoints/list', async (req, res, next) => {
 
         // TODO:
         res.send('hello ' + req.user['user_name']);
@@ -46,6 +106,9 @@ class Server {
         if (!monitor) throw new Error('Missing parameter monitor!');
 
         const server = restify.createServer();
+        server.use(restify.plugins.queryParser({ mapParams: true }));
+        server.use(restify.plugins.bodyParser({ mapParams: true }));
+        server.use(restify.plugins.acceptParser(server.acceptable));
 
         this.port = port;
         this.server = server;

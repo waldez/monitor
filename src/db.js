@@ -14,9 +14,9 @@ function buildTableSchemaString({ name, columns, constraints }) {
     return `${name} ( ${columnsStr}${constraintsStr} )`;
 }
 
-function jsonToValuesClause(json) {
+function jsonToValuesClause(json, separator = ',') {
 
-    return Object.keys(json).map(col => `\`${col}\` = ${mysql.escape(json[col])}`).join(',');
+    return Object.keys(json).map(col => `\`${col}\` = ${mysql.escape(json[col])}`).join(' ' + separator + ' ');
 }
 
 class Db {
@@ -68,14 +68,14 @@ class Db {
     async find(tableName, what) {
 
         return (await this.connection.queryAsync(
-            'SELECT * FROM ?? WHERE ' + jsonToValuesClause(what),
+            'SELECT * FROM ?? WHERE ' + jsonToValuesClause(what, 'AND'),
             [tableName]))[0];
     }
 
     async update(tableName, what, how) {
 
         return (await this.connection.queryAsync(
-            'UPDATE ?? SET ' + jsonToValuesClause(how) + ' WHERE ' + jsonToValuesClause(what),
+            'UPDATE ?? SET ' + jsonToValuesClause(how) + ' WHERE ' + jsonToValuesClause(what, 'AND'),
             [tableName]))[0];
 
     }

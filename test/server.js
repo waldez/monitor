@@ -25,6 +25,8 @@ describe('Server', function() {
         'access_token': 'dcb20f8a-5657-4f1b-9f7f-ce65739b359e'
     };
 
+    const auth = { 'bearer': batmanUser['access_token'] };
+
     before(async ()=> {
 
         this.timeout(10000);
@@ -54,7 +56,7 @@ describe('Server', function() {
     it('should return NotAuthorizedError', async ()=> {
 
         try {
-            await request(baseUrl + '/MonitorEndpoints/list');
+            await request(baseUrl + '/MonitoredEndpoints/list');
         } catch (error) {
             expect(error['statusCode']).to.equal(403);
             return;
@@ -62,12 +64,44 @@ describe('Server', function() {
         throw new Error('Request returned value, insted of error.');
     });
 
-    it('should do something', async ()=> {
+    it('should create Google endpoint', async ()=> {
 
-        const result = await request(baseUrl + '/MonitorEndpoints/list', {
-            'auth': {
-                'bearer': batmanUser['access_token']
+        const result = await request(baseUrl + '/MonitoredEndpoint', {
+            method: 'POST',
+            auth,
+            json: true,
+            body: {
+                name: 'Google',
+                url: 'http://google.com',
+                interval: 30
             }
+        });
+
+        expect(result).to.deep.equal({ monitoredEndpointId: 1 });
+    });
+
+    it('should find Google endpoint', async ()=> {
+
+        const result = await request(baseUrl + '/MonitoredEndpoint/1', {
+            auth,
+            json: true
+        });
+
+        expect(result).excluding('created').to.deep.equal({
+            id: 1,
+            name: 'Google',
+            url: 'http://google.com',
+            // created: '2018-10-27T22:55:27.000Z',
+            checked: null,
+            check_interval: 30,
+            user_id: 1
+        });
+    });
+
+    xit('should do something', async ()=> {
+
+        const result = await request(baseUrl + '/MonitoredEndpoints/list', {
+            auth
         });
 
         console.log('!W! - result:', result);
