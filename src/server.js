@@ -30,72 +30,60 @@ function bindRoutes(server, db, monitor) {
     // Create
     server.post('/MonitoredEndpoint', async (req, res, next) => {
 
-        // {
-        //     "name": "id",
-        //     "specs": "bigint unsigned not null auto_increment"
-        // },
-        // {
-        //     "name": "name",
-        //     "specs": "VARCHAR(40)"
-        // },
-        // {
-        //     "name": "url",
-        //     "specs": "VARCHAR(1024)"
-        // },
-        // {
-        //     "name": "created",
-        //     "specs": "DATETIME"
-        // },
-        // {
-        //     "name": "checked",
-        //     "specs": "DATETIME"
-        // },
-        // {
-        //     "name": "check_interval",
-        //     "specs": "int unsigned"
-        // },
-        // {
-        //     "name": "user_id",
-        //     "specs": "bigint unsigned"
-        // }
-
-        // TODO: joi (ajv?) validation...
-
-        const { name, url, interval } = req.body;
+        // TODO: joi (ajv?) validation... & remove parseInt()
+        // req.body
 
         const result = await db.insert('MonitoredEndpoints', {
-            name,
-            url,
+            name: req.body.name,
+            url: req.body.url,
             created: new Date(),
-            'check_interval': interval,
+            'check_interval': req.body['check_interval'],
             'user_id': req.user.id
         });
 
         // TODO:
         // monitor.addEndpoint(...);
 
-        res.send({ monitoredEndpointId: result });
+        res.send({ createdId: result });
+        next();
+    });
+
+    // Read - list
+    server.get('/MonitoredEndpoints', async (req, res, next) => {
+
+        const endpoints = (await db.find('MonitoredEndpoints', { user_id: req.user.id }));
+        res.send(endpoints);
         next();
     });
 
     // Read
     server.get('/MonitoredEndpoint/:id', async (req, res, next) => {
 
-        const id = parseInt(req.params.id);
+        const id = req.params.id;
         const endpoint = (await db.find('MonitoredEndpoints', { id, user_id: req.user.id }))[0];
         res.send(endpoint);
         next();
     });
 
-    // Read - list
-    server.get('/MonitoredEndpoints/list', async (req, res, next) => {
+    // Update
+    server.put('/MonitoredEndpoint/:id', async (req, res, next) => {
 
-        // TODO:
-        res.send('hello ' + req.user['user_name']);
+        // TODO: joi (ajv?) validation... & remove parseInt()
+        const id = parseInt(req.params.id);
+        await db.update('MonitoredEndpoints', { id, user_id: req.user.id }, req.body);
+        res.send({ updatedId: id });
         next();
     });
 
+    // Delete
+    server.del('/MonitoredEndpoint/:id', async (req, res, next) => {
 
+        // TODO: joi (ajv?) validation... & remove parseInt()
+        const id = parseInt(req.params.id);
+        await db.remove('MonitoredEndpoints', { id, user_id: req.user.id }, req.body);
+        res.send({ removedId: id });
+        next();
+    });
 }
 
 class Server {

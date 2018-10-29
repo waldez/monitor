@@ -1,6 +1,4 @@
 'use strict';
-
-'use strict';
 const chai = require('chai');
 const chaiExclude = require('chai-exclude');
 const expect = chai.expect;
@@ -53,5 +51,13 @@ describe('Db', function() {
             'Users', { access_token: batmanUser.access_token }, { email: 'bruce@wayne.com' });
 
         expect(result.changedRows).to.equal(1);
+    });
+
+    it('should delete Batman', async ()=> {
+
+        const result = await db.remove(
+            'Users', { access_token: batmanUser.access_token });
+
+        expect(result.affectedRows).to.equal(1);
     });
 });

@@ -80,6 +80,13 @@ class Db {
 
     }
 
+    async remove(tableName, what, how) {
+
+        return (await this.connection.queryAsync(
+            'DELETE FROM ?? WHERE ' + jsonToValuesClause(what, 'AND'),
+            [tableName]))[0];
+    }
+
     /**
      * Just for testing
      * @return {Promise<Array>}
