@@ -226,13 +226,4 @@ describe('Server', function() {
             }
         ]);
     });
-
-    xit('should do something', async ()=> {
-
-        const result = await request(baseUrl + '/MonitoredEndpoints', {
-            auth
-        });
-
-        console.log('!W! - result:', result);
-    });
 });

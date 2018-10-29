@@ -77,7 +77,8 @@
             },
             {
                 "name": "timestamp",
-                "specs": "TIMESTAMP"
+                "specs": "DATETIME",
+                "specs-smazat!!!": "TIMESTAMP"
             },
             {
                 "name": "monitored_endpoint_id",
