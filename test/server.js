@@ -25,12 +25,6 @@ describe('Server', function() {
         'access_token': 'dcb20f8a-5657-4f1b-9f7f-ce65739b359e'
     };
 
-    // const appliftingUser = {
-    //     'user_name': 'Applifting',
-    //     'email': 'info@applifting.cz',
-    //     'access_token': '93f39e2f-80de-4033-99ee-249d92736a25'
-    // };
-
     const auth = { 'bearer': batmanUser['access_token'] };
 
     before(async ()=> {
@@ -43,8 +37,6 @@ describe('Server', function() {
 
         const batmanId = await db.insert('Users', batmanUser);
         expect(batmanId).to.be.a('number');
-        // const appliftingId = await db.insert('Users', appliftingUser);
-        // expect(appliftingId).to.be.a('number');
 
         server = new Server({
             port,
@@ -88,6 +80,38 @@ describe('Server', function() {
         expect(result.createdId).to.deep.equal(1);
     });
 
+    it('should return validation error', async ()=> {
+
+        try {
+            await request(baseUrl + '/MonitoredEndpoint', {
+                method: 'POST',
+                auth,
+                json: true,
+                body: {
+                    // missing name
+                    // name: 'Google',
+                    url: 'http://google.com',
+                    'check_interval': 30
+                }
+            });
+        } catch ({error}) {
+            const expectedError = [
+                {
+                    'keyword': 'required',
+                    'dataPath': '.body',
+                    'schemaPath': '#/properties/body/required',
+                    'params': {
+                        'missingProperty': 'name'
+                    },
+                    'message': 'should have required property \'name\''
+                }
+            ];
+            expect(JSON.parse(error.message).errors).to.deep.equal(expectedError);
+            return;
+        }
+        throw new Error('Request returned value, insted of error.');
+    });
+
     it('should find Google endpoint', async ()=> {
 
         const result = await request(baseUrl + '/MonitoredEndpoint/1', {
@@ -99,7 +123,6 @@ describe('Server', function() {
             id: 1,
             name: 'Google',
             url: 'http://google.com',
-            // created: '2018-10-27T22:55:27.000Z',
             checked: null,
             'check_interval': 30,
             user_id: 1
@@ -134,7 +157,6 @@ describe('Server', function() {
                 'id': 1,
                 'name': 'Google',
                 'url': 'http://google.com',
-                // 'created': '2018-10-29T08:51:41.000Z',
                 'checked': null,
                 'check_interval': 30,
                 'user_id': 1
@@ -142,7 +164,6 @@ describe('Server', function() {
                 'id': 2,
                 'name': 'Applifting',
                 'url': 'http://www.applifting.cz',
-                // 'created': '2018-10-29T08:51:41.000Z',
                 'checked': null,
                 'check_interval': 25,
                 'user_id': 1
@@ -173,7 +194,6 @@ describe('Server', function() {
             id: 1,
             name: 'Google',
             url: 'http://google.cz',
-            // created: '2018-10-27T22:55:27.000Z',
             checked: null,
             check_interval: 60,
             user_id: 1
@@ -200,7 +220,6 @@ describe('Server', function() {
                 'id': 2,
                 'name': 'Applifting',
                 'url': 'http://www.applifting.cz',
-                // 'created': '2018-10-29T08:51:41.000Z',
                 'checked': null,
                 'check_interval': 25,
                 'user_id': 1
@@ -215,6 +234,5 @@ describe('Server', function() {
         });
 
         console.log('!W! - result:', result);
-
     });
 });

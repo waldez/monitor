@@ -1,7 +1,8 @@
 'use strict';
 
 const restify = require('restify');
-const errors = require('restify-errors');
+const restifyErrors = require('restify-errors');
+const validator = require('restify-ajv-middleware');
 const Promise = require('bluebird');
 
 function bindRoutes(server, db, monitor) {
@@ -13,13 +14,13 @@ function bindRoutes(server, db, monitor) {
         const accessToken = auth ? auth.split(' ')[1] : null;
 
         if (!accessToken || accessToken.length !== 36) {
-            return next(new errors.NotAuthorizedError('Missing or invalid access token'));
+            return next(new restifyErrors.NotAuthorizedError('Missing or invalid access token'));
         }
 
         const user = (await db.find('Users', { access_token: accessToken }))[0];
 
         if (!user) {
-            return next(new errors.NotAuthorizedError('Missing or invalid access token'));
+            return next(new restifyErrors.NotAuthorizedError('Missing or invalid access token'));
         }
 
         req.user = user;
@@ -28,10 +29,21 @@ function bindRoutes(server, db, monitor) {
 
     // CRUD for MonitoredEndpoints
     // Create
-    server.post('/MonitoredEndpoint', async (req, res, next) => {
-
-        // TODO: joi (ajv?) validation... & remove parseInt()
-        // req.body
+    server.post({
+        path: '/MonitoredEndpoint',
+        validation: {
+            body: {
+                type: 'object',
+                properties: {
+                    'name': { type: 'string', 'minLength': 3, 'maxLength': 40 },
+                    'url': { type: 'string', 'minLength': 3, 'maxLength': 1024, format: 'uri' },
+                    'check_interval': { type: 'number' }
+                },
+                required: ['name', 'url', 'check_interval'],
+                additionalProperties: false
+            }
+        }
+    }, async (req, res, next) => {
 
         const result = await db.insert('MonitoredEndpoints', {
             name: req.body.name,
@@ -49,7 +61,9 @@ function bindRoutes(server, db, monitor) {
     });
 
     // Read - list
-    server.get('/MonitoredEndpoints', async (req, res, next) => {
+    server.get({
+        path: '/MonitoredEndpoints'
+    }, async (req, res, next) => {
 
         const endpoints = (await db.find('MonitoredEndpoints', { user_id: req.user.id }));
         res.send(endpoints);
@@ -57,7 +71,19 @@ function bindRoutes(server, db, monitor) {
     });
 
     // Read
-    server.get('/MonitoredEndpoint/:id', async (req, res, next) => {
+    server.get({
+        path: '/MonitoredEndpoint/:id',
+        validation: {
+            params: {
+                type: 'object',
+                properties: {
+                    'id': { type: 'number' }
+                },
+                required: ['id'],
+                additionalProperties: false
+            }
+        }
+    }, async (req, res, next) => {
 
         const id = req.params.id;
         const endpoint = (await db.find('MonitoredEndpoints', { id, user_id: req.user.id }))[0];
@@ -66,21 +92,52 @@ function bindRoutes(server, db, monitor) {
     });
 
     // Update
-    server.put('/MonitoredEndpoint/:id', async (req, res, next) => {
+    server.put({
+        path: '/MonitoredEndpoint/:id',
+        validation: {
+            params: {
+                type: 'object',
+                properties: {
+                    'id': { type: 'number' }
+                },
+                required: ['id'],
+                additionalProperties: false
+            },
+            body: {
+                type: 'object',
+                properties: {
+                    'name': { type: 'string', 'minLength': 3, 'maxLength': 40 },
+                    'url': { type: 'string', 'minLength': 3, 'maxLength': 1024, format: 'uri' },
+                    'check_interval': { type: 'number' }
+                },
+                additionalProperties: false
+            }
+        }
+    }, async (req, res, next) => {
 
-        // TODO: joi (ajv?) validation... & remove parseInt()
-        const id = parseInt(req.params.id);
+        const id = req.params.id;
         await db.update('MonitoredEndpoints', { id, user_id: req.user.id }, req.body);
         res.send({ updatedId: id });
         next();
     });
 
     // Delete
-    server.del('/MonitoredEndpoint/:id', async (req, res, next) => {
+    server.del({
+        path: '/MonitoredEndpoint/:id',
+        validation: {
+            params: {
+                type: 'object',
+                properties: {
+                    'id': { type: 'number' }
+                },
+                required: ['id'],
+                additionalProperties: false
+            }
+        }
+    }, async (req, res, next) => {
 
-        // TODO: joi (ajv?) validation... & remove parseInt()
-        const id = parseInt(req.params.id);
-        await db.remove('MonitoredEndpoints', { id, user_id: req.user.id }, req.body);
+        const id = req.params.id;
+        await db.remove('MonitoredEndpoints', { id, user_id: req.user.id });
         res.send({ removedId: id });
         next();
     });
@@ -95,8 +152,35 @@ class Server {
 
         const server = restify.createServer();
         server.use(restify.plugins.queryParser({ mapParams: true }));
-        server.use(restify.plugins.bodyParser({ mapParams: true }));
+        server.use(restify.plugins.bodyParser({ mapParams: !true }));
         server.use(restify.plugins.acceptParser(server.acceptable));
+
+
+        const val = validator({
+            coerceTypes: true,
+            allErrors: true,
+            // TODO: make errors more friendly for the client (there is option 'info' in restify-errors, make it work)
+            errorTransformer: (validationInput, errors) => JSON.stringify({ validationInput, errors }, null, 2),
+            errorResponder: (transformedErr, req, res, next) =>
+                next(new restifyErrors.BadRequestError(transformedErr)),
+            // changes the request keys validated
+            keysToValidate: ['params', 'body', 'query'/*, 'user', 'headers', 'trailers'*/]
+        });
+
+        // TODO - FIX: this middleware expects to have validation object in req.route.validation
+        // I don't know, if this is just mismatch of versions,
+        // but unfortunately I don't have time to investigate it further
+        const fixedValidator = (req, res, next) => {
+
+            if (!req.route.validation && req.route.spec && req.route.spec.validation) {
+                req.route.validation = req.route.spec.validation;
+            }
+
+            return val(req, res, next);
+        };
+
+        // use AJV for validation
+        server.use(fixedValidator);
 
         this.port = port;
         this.server = server;
