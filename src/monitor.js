@@ -18,7 +18,11 @@ class Monitor extends EventEmitter {
         this.endpointsData = new WeakMap();
         this.endpoints = new Map();
 
-        // TODO: got through initial enpoints
+        if (endpoints && typeof endpoints[Symbol.iterator] === 'function') {
+            for (let endpoint of endpoints) {
+                this.addEndpoint(endpoint);
+            }
+        }
     }
 
     scheduleEndpointMonitoring(endpoint) {
@@ -58,11 +62,13 @@ class Monitor extends EventEmitter {
             endpoint.checked = new Date();
             monitoringResult.status_code = response.statusCode;
             monitoringResult.payload = response.body;
-            monitoringResult.timestamp = endpoint.checked;
         } catch (error) {
-            console.log(`!W! - ===================== ERROR =====================\n`);
-            console.log('!W! - error:', error, Object.keys(error));
+
+            endpoint.checked = new Date();
+            monitoringResult.status_code = error.statusCode;
+            monitoringResult.payload = error.response.body;
         }
+        monitoringResult.timestamp = endpoint.checked;
 
         this.emit('monitorResult', monitoringResult, endpoint);
         this.scheduleEndpointMonitoring(endpoint);
