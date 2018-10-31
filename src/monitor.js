@@ -18,6 +18,11 @@ class Monitor extends EventEmitter {
         this.endpointsData = new WeakMap();
         this.endpoints = new Map();
 
+        this.addEndpoints(endpoints);
+    }
+
+    addEndpoints(endpoints) {
+
         if (endpoints && typeof endpoints[Symbol.iterator] === 'function') {
             for (let endpoint of endpoints) {
                 this.addEndpoint(endpoint);
@@ -70,8 +75,11 @@ class Monitor extends EventEmitter {
         }
         monitoringResult.timestamp = endpoint.checked;
 
-        this.emit('monitorResult', monitoringResult, endpoint);
-        this.scheduleEndpointMonitoring(endpoint);
+        // there could occur endpoint removal during the request, so check, if we should emit the event
+        if (this.endpoints.has(endpoint.id)) {
+            this.emit('monitorResult', monitoringResult, endpoint);
+            this.scheduleEndpointMonitoring(endpoint);
+        }
     }
 
     addEndpoint(endpoint) {
@@ -87,10 +95,12 @@ class Monitor extends EventEmitter {
     removeEndpoint(endpointId) {
 
         const endpoint = this.endpoints.get(endpointId);
-        this.endpoints.delete(endpointId);
+        if (endpoint) {
+            this.endpoints.delete(endpointId);
 
-        const monitor = this.endpointsData.get(endpoint);
-        clearTimeout(monitor.timer);
+            const monitor = this.endpointsData.get(endpoint);
+            clearTimeout(monitor.timer);
+        }
     }
 
     changeEndpoint(endpointId, { name, check_interval: checkInterval , url } = {}) {
@@ -114,6 +124,7 @@ class Monitor extends EventEmitter {
 
     destroy() {
 
+        this.removeAllListeners();
         for (let monitor of monitors(this.endpoints, this.endpointsData)) {
             clearTimeout(monitor.timer);
         }

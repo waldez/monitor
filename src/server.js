@@ -45,16 +45,19 @@ function bindRoutes(server, db, monitor) {
         }
     }, async (req, res, next) => {
 
-        const result = await db.insert('MonitoredEndpoints', {
+        const endpoint = {
             name: req.body.name,
             url: req.body.url,
             created: new Date(),
             'check_interval': req.body['check_interval'],
             'user_id': req.user.id
-        });
+        };
+        const result = await db.insert('MonitoredEndpoints', endpoint);
+        // assign newly obtained id
+        endpoint.id = result;
 
-        // TODO:
-        // monitor.addEndpoint(...);
+        // start monitoring
+        monitor.addEndpoint(endpoint);
 
         res.send({ createdId: result });
         next();
@@ -117,6 +120,9 @@ function bindRoutes(server, db, monitor) {
 
         const id = req.params.id;
         await db.update('MonitoredEndpoints', { id, user_id: req.user.id }, req.body);
+
+        monitor.changeEndpoint(id, req.body);
+
         res.send({ updatedId: id });
         next();
     });
@@ -137,8 +143,38 @@ function bindRoutes(server, db, monitor) {
     }, async (req, res, next) => {
 
         const id = req.params.id;
+
+        monitor.removeEndpoint(id);
+
         await db.remove('MonitoredEndpoints', { id, user_id: req.user.id });
         res.send({ removedId: id });
+        next();
+    });
+
+    // MonitoringResults
+    // Read
+    server.get({
+        path: '/MonitoringResults/:monitored_endpoint_id',
+        validation: {
+            params: {
+                type: 'object',
+                properties: {
+                    'monitored_endpoint_id': { type: 'number' }
+                },
+                required: ['monitored_endpoint_id'],
+                additionalProperties: false
+            }
+        }
+    }, async (req, res, next) => {
+
+        const results = (await db.find('MonitoringResults', {
+            monitored_endpoint_id: req.params.monitored_endpoint_id
+        }, {
+            orderBy: 'id DESC',
+            limit: 10
+        }));
+
+        res.send(results);
         next();
     });
 }
@@ -152,7 +188,7 @@ class Server {
 
         const server = restify.createServer();
         server.use(restify.plugins.queryParser({ mapParams: true }));
-        server.use(restify.plugins.bodyParser({ mapParams: !true }));
+        server.use(restify.plugins.bodyParser({ mapParams: false }));
         server.use(restify.plugins.acceptParser(server.acceptable));
 
 
@@ -183,7 +219,9 @@ class Server {
         server.use(fixedValidator);
 
         this.port = port;
+        this.db = db;
         this.server = server;
+        this.monitor = monitor;
 
         server.listenAsync = Promise.promisify(server.listen, { context: server });
         server.closeAsync = Promise.promisify(server.close, { context: server });
@@ -191,13 +229,27 @@ class Server {
         bindRoutes(server, db, monitor);
     }
 
-    start() {
+    async onMonitoringResult(monitoringResult, endpoint) {
+
+        // add foreign key to the result
+        monitoringResult['monitored_endpoint_id'] = endpoint.id;
+        await this.db.insert('MonitoringResults', monitoringResult);
+    }
+
+    async start() {
+
+        const { db, monitor } = this;
+        const endpoints = (await db.find('MonitoredEndpoints', {}));
+
+        monitor.on('monitorResult', this.onMonitoringResult.bind(this));
+        monitor.addEndpoints(endpoints);
 
         return this.server.listenAsync(this.port);
     }
 
     stop() {
 
+        this.monitor.destroy();
         return this.server.closeAsync();
     }
 }

@@ -16,5 +16,8 @@ module.exports = {
         database : getEnvVar('DB_DATABASE', 'monitor'),
         password: getEnvVar('DB_PWD', 'einZweiDrei'),
         tablesSchema: require(schemaPath)
+    },
+    server: {
+        port: getEnvVar('SERVER_PORT', 8888, parseInt)
     }
 };

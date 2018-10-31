@@ -19,6 +19,11 @@ function jsonToValuesClause(json, separator = ',') {
     return Object.keys(json).map(col => `\`${col}\` = ${mysql.escape(json[col])}`).join(' ' + separator + ' ');
 }
 
+function buildWhereClause(what) {
+
+    return (what && Object.keys(what).length > 0) ? 'WHERE ' + jsonToValuesClause(what, 'AND') : '';
+}
+
 class Db {
 
     constructor(options = {}) {
@@ -65,17 +70,21 @@ class Db {
         return (await this.connection.queryAsync('INSERT INTO ?? SET ?', [tableName, data]))[0].insertId;
     }
 
-    async find(tableName, what) {
+    async find(tableName, what, { orderBy, limit } = {}) {
+
+        // ORDER BY id DESC LIMIT 50
+        orderBy = orderBy ? ' ORDER BY ' + orderBy : '';
+        limit = limit ? ' LIMIT ' + limit : '';
 
         return (await this.connection.queryAsync(
-            'SELECT * FROM ?? WHERE ' + jsonToValuesClause(what, 'AND'),
+            'SELECT * FROM ?? ' + buildWhereClause(what) + orderBy + limit,
             [tableName]))[0];
     }
 
     async update(tableName, what, how) {
 
         return (await this.connection.queryAsync(
-            'UPDATE ?? SET ' + jsonToValuesClause(how) + ' WHERE ' + jsonToValuesClause(what, 'AND'),
+            'UPDATE ?? SET ' + jsonToValuesClause(how) + ' ' + buildWhereClause(what),
             [tableName]))[0];
 
     }
@@ -83,7 +92,7 @@ class Db {
     async remove(tableName, what) {
 
         return (await this.connection.queryAsync(
-            'DELETE FROM ?? WHERE ' + jsonToValuesClause(what, 'AND'),
+            'DELETE FROM ?? ' + buildWhereClause(what),
             [tableName]))[0];
     }
 
