@@ -144,9 +144,12 @@ function bindRoutes(server, db, monitor) {
 
         const id = req.params.id;
 
+
+        await db.remove('MonitoringResults', { monitored_endpoint_id: id });
+        await db.remove('MonitoredEndpoints', { id, user_id: req.user.id });
+
         monitor.removeEndpoint(id);
 
-        await db.remove('MonitoredEndpoints', { id, user_id: req.user.id });
         res.send({ removedId: id });
         next();
     });
@@ -200,7 +203,7 @@ class Server {
             errorResponder: (transformedErr, req, res, next) =>
                 next(new restifyErrors.BadRequestError(transformedErr)),
             // changes the request keys validated
-            keysToValidate: ['params', 'body', 'query'/*, 'user', 'headers', 'trailers'*/]
+            keysToValidate: ['params', 'body', 'query']
         });
 
         // TODO - FIX: this middleware expects to have validation object in req.route.validation
@@ -239,6 +242,7 @@ class Server {
     async start() {
 
         const { db, monitor } = this;
+        await this.db.initialize();
         const endpoints = (await db.find('MonitoredEndpoints', {}));
 
         monitor.on('monitorResult', this.onMonitoringResult.bind(this));
@@ -250,6 +254,7 @@ class Server {
     stop() {
 
         this.monitor.destroy();
+        this.db.end();
         return this.server.closeAsync();
     }
 }

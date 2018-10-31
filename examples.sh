@@ -1,50 +1,3 @@
-# monitor
-
-## Prerequisites
-
- * node.js
- * npm or yarn
- * docker and docker-compose
-
-## Installation
-
-```sh
-docker-compose -p monitor up -d
-npm i
-```
-
-## Run
-
-```sh
-npm start
-```
-
-## Tests
-
-```sh
-npm test
-```
-
-## Additional info
-Create Batman & Applifting user
-```sh
-npm start fakeUsers
-```
-Clear database tables
-```sh
-npm start clearDb
-```
-
-Server is configured via ENV variables.
-Start at port 80:
-```sh
-SERVER_PORT=80 npm start
-```
-Default HTTP server port is 8888.
-
-## Examples
-
-```sh
 #!/bin/bash
 
 # DISCLAIMER!
@@ -94,7 +47,7 @@ sleep 5
 curl --header "Content-Type: application/json" \
   --request GET \
   -H "Authorization: Bearer ${BATMANS_ACCESS_TOKEN}" \
-  http://localhost:8888/MonitoringResults/1
+  http://localhost:8888/MonitoringResults/2
 
 echo ""
 
@@ -105,5 +58,3 @@ curl --header "Content-Type: application/json" \
   http://localhost:8888/MonitoredEndpoint/1
 
 echo ""
-
-```

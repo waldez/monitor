@@ -33,22 +33,20 @@ describe('Server', function() {
 
         config.mysql.database = 'testdb';
         db = new Db(config.mysql);
-        await db.initialize();
-
-        const batmanId = await db.insert('Users', batmanUser);
-        expect(batmanId).to.be.a('number');
 
         const serverOptions = Object.assign({}, config.server, { db, monitor });
 
         server = new Server(serverOptions);
         await server.start();
+
+        const batmanId = await db.insert('Users', batmanUser);
+        expect(batmanId).to.be.a('number');
     });
 
     after(async ()=> {
 
-        await server.stop();
         await db.removeTables();
-        await db.end();
+        await server.stop();
     });
 
     it('should return NotAuthorizedError', async ()=> {

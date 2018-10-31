@@ -1,39 +1,49 @@
 'use strict';
 
-async function start(config, Db) {
+async function start(config, Db, Monitor, Server, action) {
 
     const db = new Db(config.mysql);
-    await db.initialize();
+    const monitor = new Monitor();
+    const serverOptions = Object.assign({}, config.server, { db, monitor });
 
-    // TODO: temporary - remove when finished
-    if (false) {
+    const server = new Server(serverOptions);
+    await server.start();
 
+    if (action === 'clearDb') {
         await db.removeTables();
-        return await db.end();
+        return await server.stop();
     }
 
-    const initialUsers = [
-        {
-            'user_name': 'Applifting',
-            'email': 'info@applifting.cz',
-            'access_token': '93f39e2f-80de-4033-99ee-249d92736a25'
-        },
-        {
-            'user_name': 'Batman',
-            'email': 'batman@example.com',
-            'access_token': 'dcb20f8a-5657-4f1b-9f7f-ce65739b359e'
+    if (action === 'fakeUsers') {
+        const users = await db.find('Users');
+        if (users.length === 0) {
+            const initialUsers = [
+                {
+                    'user_name': 'Applifting',
+                    'email': 'info@applifting.cz',
+                    'access_token': '93f39e2f-80de-4033-99ee-249d92736a25'
+                },
+                {
+                    'user_name': 'Batman',
+                    'email': 'batman@example.com',
+                    'access_token': 'dcb20f8a-5657-4f1b-9f7f-ce65739b359e'
+                }
+            ];
+
+            await db.insert('Users', initialUsers[0]);
+            await db.insert('Users', initialUsers[1]);
         }
-    ];
 
-    const insertResult = await db.insert('Users', initialUsers[0]);
+        return await server.stop();
+    }
 
-    console.log('!W! - insertResult:\n', JSON.stringify(insertResult, null, 2));
-
-    // TODO: temporary - remove when finished
-    await db.end();
+    console.log(`Server listening at port: ${config.server.port}`);
 }
 
 start(
     require('./src/config'),
-    require('./src/db')
+    require('./src/db'),
+    require('./src/monitor'),
+    require('./src/server'),
+    process.argv[2]
 );
